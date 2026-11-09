@@ -1,282 +1,123 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Classroom Teaching Whiteboard</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Classroom Whiteboard</title>
 <style>
-  * { box-sizing: border-box; }
-  body { margin:0; padding:16px; font-family:Arial,sans-serif; background:#eef1f4; color:#202832; }
-  .app { max-width:1100px; margin:auto; }
-  header { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
-  h1 { font-size:22px; margin:0 0 5px; }
-  .muted { color:#66717d; font-size:13px; }
-  .panel { background:#fff; border:1px solid #d7dde3; border-radius:12px; padding:13px; margin-bottom:12px; }
-  .label { font-size:11px; font-weight:bold; color:#66717d; letter-spacing:.05em; margin-bottom:8px; }
-  .toolbar { display:flex; gap:7px; flex-wrap:wrap; align-items:center; }
-  button { border:1px solid #cbd2d9; border-radius:8px; padding:9px 12px; background:#fff; color:#202832; cursor:pointer; font-size:13px; }
-  button:hover { background:#f0f4f7; }
-  button.active { background:#e5efff; border-color:#3978c6; font-weight:bold; }
-  button:disabled { opacity:.4; cursor:not--allowed; }
-  .swatch { width:28px; height:28px; padding:0; border-radius:50%; border:2px solid #aaa; }
-  .swatch.active { outline:3px solid #3978c6; outline-offset:2px; }
-  .controls { display:flex; gap:24px; flex-wrap:wrap; align-items:center; margin-top:14px; }
-  .board-shell { background:#fff; border:2px solid #aeb7bd; border-radius:10px; overflow:hidden; }
-  .board-head { display:flex; justify-content:space-between; padding:10px 13px; background:#f1f4f5; color:#263238; font-size:12px; font-weight:bold; }
-  canvas { display:block; width:100%; height:min(62vh,620px); min-height:320px; background:#fff; touch-action:none; cursor:crosshair; }
-  .actions { margin-top:12px; }
-  .primary { background:#2469b5; color:white; border-color:#2469b5; }
-  .primary:hover { background:#1c5797; }
-  #status { margin-top:10px; min-height:18px; }
-  @media(max-width:600px) { body{padding:9px} canvas{height:55vh;min-height:300px} button{padding:8px 9px} h1{font-size:19px} }
+:root{font-family:Arial,Helvetica,sans-serif;color:#18212f;background:#eef1f5}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:flex;flex-direction:column}
+header{background:#18212f;color:#fff;padding:12px 16px;font-size:18px;font-weight:700}
+.toolbar{display:flex;flex-wrap:wrap;gap:7px;align-items:center;padding:10px;background:#fff;border-bottom:1px solid #d6dce5}
+button,select,input{font:inherit}
+button{border:1px solid #c8d0dc;background:#fff;border-radius:7px;padding:8px 11px;cursor:pointer}
+button.active{background:#dceafe;border-color:#3975d7;color:#174b9c}
+button:hover{background:#edf3fc}
+label{display:flex;align-items:center;gap:6px;font-size:13px}
+input[type=color]{width:35px;height:32px;padding:2px;border:1px solid #c8d0dc;border-radius:6px}
+input[type=range]{width:95px}
+.workspace{padding:14px;flex:1;display:flex;min-height:0}
+.board-wrap{position:relative;flex:1;min-height:65vh;background:white;border:1px solid #cbd3df;border-radius:10px;overflow:hidden;box-shadow:0 2px 10px #15223812}
+canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+#draw{z-index:1;touch-action:none}
+#preview{z-index:2;pointer-events:none}
+.footer{padding:8px 14px;color:#5b6574;font-size:12px}
+@media(max-width:600px){.workspace{padding:7px}.board-wrap{min-height:68vh}.toolbar{gap:5px}button{padding:7px 9px}}
 </style>
 </head>
 <body>
-<div class="app">
-  <header>
-    <div>
-      <h1>My Classroom Whiteboard</h1>
-      <div class="muted">Touch-friendly teaching board · Use your finger or stylus</div>
-    </div>
-    <div class="panel" style="padding:8px 12px;margin:0"><strong id="pagecount">Page 1 of 1</strong></div>
-  </header>
-
-  <section class="panel">
-    <div class="label">DRAWING TOOLS</div>
-    <div class="toolbar" id="tools">
-      <button class="active" data-tool="pen">✎ Pen</button>
-      <button data-tool="highlighter">▰ Highlighter</button>
-      <button data-tool="eraser">⌫ Eraser</button>
-      <button data-tool="line">╱ Line</button>
-      <button data-tool="rect">▭ Rectangle</button>
-      <button data-tool="circle">◯ Oval</button>
-      <button data-tool="text">T Text</button>
-    </div>
-    <div class="controls">
-      <div>
-        <div class="label">COLOUR</div>
-        <div class="toolbar" id="colors">
-          <button class="swatch active" data-color="#17212b" style="background:#17212b" aria-label="Black"></button>
-          <button class="swatch" data-color="#e53935" style="background:#e53935" aria-label="Red"></button>
-          <button class="swatch" data-color="#1565c0" style="background:#1565c0" aria-label="Blue"></button>
-          <button class="swatch" data-color="#16834a" style="background:#16834a" aria-label="Green"></button>
-          <button class="swatch" data-color="#8e44ad" style="background:#8e44ad" aria-label="Purple"></button>
-          <button class="swatch" data-color="#e6a000" style="background:#e6a000" aria-label="Orange"></button>
-          <input id="customcolor" type="color" value="#17212b" aria-label="Custom colour" style="width:32px;height:32px;border:0;background:transparent">
-        </div>
-      </div>
-      <div style="min-width:180px;flex:1">
-        <div class="toolbar" style="justify-content:space-between">
-          <span class="label">PEN SIZE</span><span id="sizeval" class="muted">4 px</span>
-        </div>
-        <input id="pensize" type="range" min="1" max="30" value="4" style="width:100%;accent-color:#2469b5">
-      </div>
-    </div>
-  </section>
-
-  <div class="board-shell">
-    <div class="board-head"><span>WHITEBOARD</span><span>CLASSROOM TEACHING MODE</span></div>
-    <canvas id="board" aria-label="Whiteboard drawing area"></canvas>
-  </div>
-
-  <div class="toolbar actions">
-    <button id="undo">↶ Undo</button>
-    <button id="redo">↷ Redo</button>
-    <button id="clear">Clear board</button>
-    <button id="newpage">＋ New page</button>
-    <button id="prevpage">← Previous</button>
-    <button id="nextpage">Next →</button>
-    <button id="save" class="primary">↓ Save as PNG</button>
-  </div>
-  <div id="status" class="muted">Select a tool and start writing. Choose Text, then tap the board to type.</div>
+<header>Classroom Whiteboard</header>
+<div class="toolbar" id="toolbar">
+<button data-tool="pen" class="active">Pen</button>
+<button data-tool="highlighter">Highlighter</button>
+<button data-tool="eraser">Eraser</button>
+<button data-tool="line">Line</button>
+<button data-tool="rect">Rectangle</button>
+<button data-tool="ellipse">Oval</button>
+<button data-tool="text">Text</button>
+<label>Colour <input id="colour" type="color" value="#172033"></label>
+<label>Size <input id="size" type="range" min="1" max="30" value="4"><span id="sizeVal">4</span></label>
+<button id="undo">Undo</button><button id="redo">Redo</button><button id="clear">Clear</button>
+<button id="prev">◀ Page</button><span id="pageLabel">1 / 1</span><button id="next">Page ▶</button>
+<button id="save">Save PNG</button>
 </div>
-
+<div class="workspace"><div class="board-wrap" id="board">
+<canvas id="draw"></canvas><canvas id="preview"></canvas>
+</div></div>
+<div class="footer">Select a tool, then draw on the whiteboard. Shapes are previewed on a separate layer and committed when you release the pointer.</div>
 <script>
 (() => {
-  const canvas = document.getElementById('board');
-  const ctx = canvas.getContext('2d');
-  const $ = id => document.getElementById(id);
-  let tool = 'pen', color = '#17212b', size = 4;
-  let drawing = false, start = null, last = null, shapeBase = null;
-  let history = [], future = [], pages = [null], page = 0;
-
-  function setupCanvas(preserve = true) {
-    const old = preserve && canvas.width ? canvas.toDataURL() : null;
-    const rect = canvas.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = Math.round(rect.width * dpr);
-    canvas.height = Math.round(rect.height * dpr);
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(0, 0, rect.width, rect.height);
-    if (old) drawImageData(old);
+const base=document.getElementById('draw'), overlay=document.getElementById('preview');
+const ctx=base.getContext('2d'), pctx=overlay.getContext('2d');
+const board=document.getElementById('board');
+let tool='pen', color='#172033', width=4, drawing=false, start=null, last=null;
+let pages=[null], pageIndex=0, history=[], future=[];
+const shapeTools=new Set(['line','rect','ellipse']);
+function dimensions(){const r=board.getBoundingClientRect();return {w:r.width,h:r.height,dpr:Math.max(1,window.devicePixelRatio||1)}}
+function setupCanvas(c,context,preserve=true){
+  const old=preserve?c.toDataURL():null, {w,h,dpr}=dimensions();
+  c.width=Math.round(w*dpr);c.height=Math.round(h*dpr);
+  context.setTransform(dpr,0,0,dpr,0,0);
+  context.lineCap='round';context.lineJoin='round';
+  if(old){const im=new Image();im.onload=()=>{context.clearRect(0,0,w,h);context.drawImage(im,0,0,w,h)};im.src=old}
+}
+function clearPreview(){const {w,h}=dimensions();pctx.clearRect(0,0,w,h)}
+function snapshot(){history.push(base.toDataURL());if(history.length>60)history.shift();future=[]}
+function restore(data){
+  const {w,h}=dimensions();ctx.clearRect(0,0,w,h);
+  if(!data)return;
+  const im=new Image();im.onload=()=>{ctx.clearRect(0,0,w,h);ctx.drawImage(im,0,0,w,h)};im.src=data;
+}
+function savePage(){pages[pageIndex]=base.toDataURL()}
+function loadPage(i){savePage();pageIndex=i;restore(pages[i]);history=[];future=[];updatePage()}
+function updatePage(){document.getElementById('pageLabel').textContent=(pageIndex+1)+' / '+pages.length}
+function point(e){const r=base.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top}}
+function style(context,preview=false){
+  context.lineWidth=width;context.strokeStyle=color;context.fillStyle=color;
+  context.globalAlpha=tool==='highlighter'?.28:1;
+  context.globalCompositeOperation=tool==='eraser'?'destination-out':'source-over';
+}
+function drawShape(context,a,b){
+  context.beginPath();
+  if(tool==='line'){context.moveTo(a.x,a.y);context.lineTo(b.x,b.y);context.stroke()}
+  else if(tool==='rect'){context.strokeRect(a.x,a.y,b.x-a.x,b.y-a.y)}
+  else if(tool==='ellipse'){const rx=Math.abs(b.x-a.x)/2,ry=Math.abs(b.y-a.y)/2;context.ellipse((a.x+b.x)/2,(a.y+b.y)/2,Math.max(rx,.5),Math.max(ry,.5),0,0,Math.PI*2);context.stroke()}
+}
+function setTool(t){tool=t;document.querySelectorAll('[data-tool]').forEach(b=>b.classList.toggle('active',b.dataset.tool===t))}
+document.querySelectorAll('[data-tool]').forEach(b=>b.addEventListener('click',()=>setTool(b.dataset.tool)));
+document.getElementById('colour').addEventListener('input',e=>color=e.target.value);
+document.getElementById('size').addEventListener('input',e=>{width=+e.target.value;document.getElementById('sizeVal').textContent=width});
+base.addEventListener('pointerdown',e=>{
+  if(tool==='text'){const p=point(e),value=prompt('Enter text:');if(value){snapshot();ctx.save();ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;ctx.fillStyle=color;ctx.font=`${Math.max(14,width*5)}px Arial`;ctx.fillText(value,p.x,p.y);ctx.restore()}return}
+  snapshot();drawing=true;start=point(e);last=start;base.setPointerCapture(e.pointerId);
+  if(shapeTools.has(tool)){clearPreview();pctx.save();pctx.globalCompositeOperation='source-over';pctx.globalAlpha=1;pctx.strokeStyle=color;pctx.lineWidth=width;pctx.lineCap='round';pctx.lineJoin='round';pctx.restore()}
+  else {ctx.save();style(ctx);ctx.beginPath();ctx.moveTo(start.x,start.y);ctx.lineTo(start.x+.01,start.y+.01);ctx.stroke();ctx.restore()}
+});
+base.addEventListener('pointermove',e=>{
+  if(!drawing)return;const p=point(e);
+  if(shapeTools.has(tool)){
+    clearPreview();pctx.save();pctx.globalCompositeOperation='source-over';pctx.globalAlpha=1;pctx.strokeStyle=color;pctx.lineWidth=width;pctx.lineCap='round';pctx.lineJoin='round';drawShape(pctx,start,p);pctx.restore();
+  }else{
+    ctx.save();style(ctx);ctx.beginPath();ctx.moveTo(last.x,last.y);ctx.lineTo(p.x,p.y);ctx.stroke();ctx.restore();last=p;
   }
-  function drawImageData(url) {
-    const img = new Image();
-    img.onload = () => {
-      const r = canvas.getBoundingClientRect();
-      ctx.save(); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
-      ctx.drawImage(img, 0, 0, r.width, r.height); ctx.restore();
-    };
-    img.src = url;
+});
+function finish(e){
+  if(!drawing)return;const p=point(e);
+  if(shapeTools.has(tool)){
+    ctx.save();ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap='round';ctx.lineJoin='round';drawShape(ctx,start,p);ctx.restore();clearPreview();
   }
-  function snapshot() {
-    history.push(canvas.toDataURL());
-    if (history.length > 40) history.shift();
-    future = [];
-  }
-  function restore(url) {
-    const r = canvas.getBoundingClientRect();
-    ctx.save(); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
-    ctx.clearRect(0, 0, r.width, r.height);
-    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, r.width, r.height);
-    ctx.restore();
-    if (url) drawImageData(url);
-  }
-  function point(e) {
-    const r = canvas.getBoundingClientRect();
-    return { x: e.clientX - r.left, y: e.clientY - r.top };
-  }
-  function applyStyle() {
-    ctx.lineWidth = size;
-    ctx.strokeStyle = color;
-    ctx.fillStyle = color;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.globalAlpha = tool === 'highlighter' ? 0.28 : 1;
-    ctx.globalCompositeOperation = tool === 'eraser' ? 'destination-out' : 'source-over';
-  }
-  function drawShape(a, b) {
-    ctx.beginPath();
-    if (tool === 'line') {
-      ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
-    } else if (tool === 'rect') {
-      ctx.rect(a.x, a.y, b.x - a.x, b.y - a.y);
-    } else if (tool === 'circle') {
-      const dx = b.x - a.x, dy = b.y - a.y;
-      ctx.ellipse(a.x + dx / 2, a.y + dy / 2, Math.abs(dx / 2), Math.abs(dy / 2), 0, 0, Math.PI * 2);
-    }
-    ctx.stroke();
-  }
-  function setTool(next) {
-    tool = next;
-    document.querySelectorAll('[data-tool]').forEach(b => b.classList.toggle('active', b.dataset.tool === tool));
-    const hints = {
-      pen:'Write freely using your finger or stylus.',
-      highlighter:'Drag over writing to highlight it.',
-      eraser:'Drag over the writing you want to erase.',
-      line:'Drag to draw a straight line.',
-      rect:'Drag to draw a rectangle.',
-      circle:'Drag to draw an oval.',
-      text:'Tap the board to type text.'
-    };
-    $('status').textContent = hints[tool];
-    canvas.style.cursor = tool === 'text' ? 'text' : 'crosshair';
-  }
-  document.querySelectorAll('[data-tool]').forEach(b => b.addEventListener('click', () => setTool(b.dataset.tool)));
-  function chooseColor(c) {
-    color = c;
-    document.querySelectorAll('.swatch').forEach(b => b.classList.toggle('active', b.dataset.color === c));
-    $('customcolor').value = c;
-  }
-  document.querySelectorAll('.swatch').forEach(b => b.addEventListener('click', () => chooseColor(b.dataset.color)));
-  $('customcolor').addEventListener('input', e => chooseColor(e.target.value));
-  $('pensize').addEventListener('input', e => {
-    size = Number(e.target.value); $('sizeval').textContent = size + ' px';
-  });
-
-  canvas.addEventListener('pointerdown', e => {
-    e.preventDefault();
-    canvas.setPointerCapture(e.pointerId);
-    const p = point(e);
-    if (tool === 'text') {
-      const value = window.prompt('Enter your text:');
-      if (value) {
-        snapshot();
-        ctx.save(); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
-        ctx.fillStyle = color; ctx.font = `${Math.max(16, size * 5)}px Arial`;
-        value.split('\n').forEach((line, i) => ctx.fillText(line, p.x, p.y + i * Math.max(20, size * 6)));
-        ctx.restore();
-      }
-      return;
-    }
-    snapshot(); drawing = true; start = p; last = p;
-    shapeBase = ['line','rect','circle'].includes(tool)
-      ? ctx.getImageData(0, 0, canvas.width, canvas.height)
-      : null;
-    if (['pen','highlighter','eraser'].includes(tool)) {
-      applyStyle(); ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(p.x + .1,p.y + .1); ctx.stroke();
-      ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
-    }
-  });
-  canvas.addEventListener('pointermove', e => {
-    if (!drawing) return;
-    e.preventDefault();
-    const p = point(e);
-    if (['pen','highlighter','eraser'].includes(tool)) {
-      applyStyle(); ctx.beginPath(); ctx.moveTo(last.x,last.y); ctx.lineTo(p.x,p.y); ctx.stroke();
-      ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; last = p;
-    } else if (shapeBase) {
-      // Restore the exact canvas pixels synchronously before previewing the shape.
-      // This avoids asynchronous image-loading races that made existing drawings vanish.
-      ctx.putImageData(shapeBase, 0, 0);
-      applyStyle(); drawShape(start,p);
-      ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
-    }
-  });
-  function finish(e) {
-    if (!drawing) return;
-    if (shapeBase && e && ['line','rect','circle'].includes(tool)) {
-      const p = point(e);
-      ctx.putImageData(shapeBase, 0, 0);
-      applyStyle(); drawShape(start, p);
-      ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
-    }
-    drawing = false;
-    shapeBase = null;
-  }
-  canvas.addEventListener('pointerup', finish);
-  canvas.addEventListener('pointercancel', finish);
-
-  $('undo').onclick = () => {
-    if (!history.length) return;
-    future.push(canvas.toDataURL()); restore(history.pop());
-  };
-  $('redo').onclick = () => {
-    if (!future.length) return;
-    history.push(canvas.toDataURL()); restore(future.pop());
-  };
-  $('clear').onclick = () => {
-    if (!confirm('Clear this page?')) return;
-    snapshot(); const r = canvas.getBoundingClientRect();
-    ctx.clearRect(0,0,r.width,r.height); ctx.fillStyle='#fff'; ctx.fillRect(0,0,r.width,r.height);
-  };
-  function updatePageLabel() {
-    $('pagecount').textContent = `Page ${page + 1} of ${pages.length}`;
-    $('prevpage').disabled = page === 0;
-    $('nextpage').disabled = page === pages.length - 1;
-  }
-  function storePage() { pages[page] = canvas.toDataURL(); }
-  function loadPage(n) {
-    storePage(); page = n; history = []; future = [];
-    restore(pages[page]); updatePageLabel();
-  }
-  $('newpage').onclick = () => { storePage(); pages.push(null); loadPage(pages.length - 1); };
-  $('prevpage').onclick = () => { if (page > 0) loadPage(page - 1); };
-  $('nextpage').onclick = () => { if (page < pages.length - 1) loadPage(page + 1); };
-  $('save').onclick = () => {
-    const link = document.createElement('a');
-    link.download = `classroom-whiteboard-page-${page + 1}.png`;
-    link.href = canvas.toDataURL('image/png'); link.click();
-  };
-
-  setupCanvas(false);
-  updatePageLabel();
-  let resizeTimer;
-  window.addEventListener('resize', () => {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => { storePage(); setupCanvas(false); restore(pages[page]); }, 150);
-  });
+  drawing=false;start=null;last=null;savePage();
+}
+base.addEventListener('pointerup',finish);base.addEventListener('pointercancel',finish);
+document.getElementById('undo').onclick=()=>{if(!history.length)return;future.push(base.toDataURL());restore(history.pop());savePage()};
+document.getElementById('redo').onclick=()=>{if(!future.length)return;history.push(base.toDataURL());restore(future.pop());savePage()};
+document.getElementById('clear').onclick=()=>{snapshot();const {w,h}=dimensions();ctx.clearRect(0,0,w,h);clearPreview();savePage()};
+document.getElementById('prev').onclick=()=>{if(pageIndex>0)loadPage(pageIndex-1)};
+document.getElementById('next').onclick=()=>{savePage();if(pageIndex===pages.length-1)pages.push(null);pageIndex++;restore(pages[pageIndex]);history=[];future=[];updatePage()};
+document.getElementById('save').onclick=()=>{const a=document.createElement('a');a.download=`whiteboard-page-${pageIndex+1}.png`;a.href=base.toDataURL('image/png');a.click()};
+let resizeTimer;window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{savePage();setupCanvas(base,ctx,false);setupCanvas(overlay,pctx,false);restore(pages[pageIndex])},120)});
+setupCanvas(base,ctx,false);setupCanvas(overlay,pctx,false);updatePage();
 })();
 </script>
 </body>
