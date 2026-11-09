@@ -160,7 +160,9 @@ document.getElementById('next').onclick=()=>{savePage();if(pageIndex===pages.len
 const importButton=document.getElementById('importImage');
 const imageInput=document.getElementById('imageFile');
 const placeButton=document.getElementById('placeImage');
-const cancelButton=document.getElementById('cancelImage');\nconst cropButton=document.getElementById('cropImage');\nconst applyCropButton=document.getElementById('applyCrop');
+const cancelButton=document.getElementById('cancelImage');
+const cropButton=document.getElementById('cropImage');
+const applyCropButton=document.getElementById('applyCrop');
 let floatingImage=null, imageBox=null, imageDrag=null, cropMode=false, cropBox=null;
 function drawFloatingImage(){
   clearPreview();
