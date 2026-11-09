@@ -95,7 +95,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
   <div class="group-title">Edit</div>
   <div class="actions">
     <button id="undo">↶ Undo</button><button id="redo">↷ Redo</button>
-    <button id="importImage">＋ Import image</button><button id="placeImage" disabled>Place image</button><button id="cancelImage" disabled>Cancel image</button><button id="clear">Clear board</button>
+    <button id="importImage">＋ Import image</button><button id="cropImage" disabled>Crop image</button><button id="applyCrop" disabled>Apply crop</button><button id="placeImage" disabled>Place image</button><button id="cancelImage" disabled>Cancel image</button><button id="clear">Clear board</button>
   </div>
   <div class="group-title">Pages</div>
   <div class="pages">
@@ -143,12 +143,12 @@ base.addEventListener('pointerdown',e=>{
  if(floatingImage)return;
  if(tool==='text'){const q=point(e),v=prompt('Enter text:');if(v){snapshot();ctx.save();ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;ctx.fillStyle=selectedColour();ctx.font=`${Math.max(14,width*5)}px Arial`;ctx.fillText(v,q.x,q.y);ctx.restore();savePage()}return}
  snapshot();drawing=true;start=point(e);last=start;base.setPointerCapture(e.pointerId);
- if(shapeTools.has(tool)){clearPreview()}else{ctx.save();ctx.globalCompositeOperation=tool==='eraser'?'destination-out':'source-over';ctx.globalAlpha=tool==='highlighter'?.07:1;ctx.strokeStyle=selectedColour();ctx.lineWidth=width;ctx.beginPath();ctx.moveTo(start.x,start.y);ctx.lineTo(start.x+.1,start.y+.1);ctx.stroke();ctx.restore()}
+ if(shapeTools.has(tool)){clearPreview()}else{ctx.save();ctx.globalCompositeOperation=tool==='eraser'?'destination-out':'source-over';ctx.globalAlpha=tool==='highlighter'?.03:1;ctx.strokeStyle=selectedColour();ctx.lineWidth=width;ctx.beginPath();ctx.moveTo(start.x,start.y);ctx.lineTo(start.x+.1,start.y+.1);ctx.stroke();ctx.restore()}
 });
 base.addEventListener('pointermove',e=>{
  if(!drawing||floatingImage)return;const q=point(e);
  if(shapeTools.has(tool)){clearPreview();pctx.save();pctx.globalCompositeOperation='source-over';pctx.globalAlpha=1;pctx.strokeStyle=selectedColour();pctx.lineWidth=width;pctx.lineCap='round';pctx.lineJoin='round';drawShape(pctx,start,q);pctx.restore()}
- else{ctx.save();ctx.globalCompositeOperation=tool==='eraser'?'destination-out':'source-over';ctx.globalAlpha=tool==='highlighter'?.07:1;ctx.strokeStyle=selectedColour();ctx.lineWidth=width;ctx.beginPath();ctx.moveTo(last.x,last.y);ctx.lineTo(q.x,q.y);ctx.stroke();ctx.restore();last=q}
+ else{ctx.save();ctx.globalCompositeOperation=tool==='eraser'?'destination-out':'source-over';ctx.globalAlpha=tool==='highlighter'?.03:1;ctx.strokeStyle=selectedColour();ctx.lineWidth=width;ctx.beginPath();ctx.moveTo(last.x,last.y);ctx.lineTo(q.x,q.y);ctx.stroke();ctx.restore();last=q}
 });
 function finish(e){if(!drawing)return;const q=point(e);if(shapeTools.has(tool)){ctx.save();ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;ctx.strokeStyle=selectedColour();ctx.lineWidth=width;ctx.lineCap='round';ctx.lineJoin='round';drawShape(ctx,start,q);ctx.restore();clearPreview()}drawing=false;start=last=null;savePage()}
 base.addEventListener('pointerup',finish);base.addEventListener('pointercancel',finish);
@@ -160,8 +160,8 @@ document.getElementById('next').onclick=()=>{savePage();if(pageIndex===pages.len
 const importButton=document.getElementById('importImage');
 const imageInput=document.getElementById('imageFile');
 const placeButton=document.getElementById('placeImage');
-const cancelButton=document.getElementById('cancelImage');
-let floatingImage=null, imageBox=null, imageDrag=null;
+const cancelButton=document.getElementById('cancelImage');\nconst cropButton=document.getElementById('cropImage');\nconst applyCropButton=document.getElementById('applyCrop');
+let floatingImage=null, imageBox=null, imageDrag=null, cropMode=false, cropBox=null;
 function drawFloatingImage(){
   clearPreview();
   if(!floatingImage||!imageBox)return;
@@ -173,6 +173,20 @@ function drawFloatingImage(){
   pctx.setLineDash([]);
   const s=12;pctx.fillStyle='#2670d8';
   pctx.fillRect(imageBox.x+imageBox.w-s/2,imageBox.y+imageBox.h-s/2,s,s);
+  if(cropMode && cropBox){
+    pctx.fillStyle='rgba(0,0,0,.38)';
+    pctx.fillRect(imageBox.x,imageBox.y,imageBox.w,imageBox.h);
+    pctx.clearRect(cropBox.x,cropBox.y,cropBox.w,cropBox.h);
+    pctx.drawImage(floatingImage,
+      (cropBox.x-imageBox.x)/imageBox.w*floatingImage.width,
+      (cropBox.y-imageBox.y)/imageBox.h*floatingImage.height,
+      cropBox.w/imageBox.w*floatingImage.width,
+      cropBox.h/imageBox.h*floatingImage.height,
+      cropBox.x,cropBox.y,cropBox.w,cropBox.h);
+    pctx.setLineDash([6,4]);pctx.strokeStyle='#f59e0b';pctx.lineWidth=2;
+    pctx.strokeRect(cropBox.x,cropBox.y,cropBox.w,cropBox.h);pctx.setLineDash([]);
+    pctx.fillStyle='#f59e0b';pctx.fillRect(cropBox.x+cropBox.w-s/2,cropBox.y+cropBox.h-s/2,s,s);
+  }
   pctx.restore();
 }
 function finishImagePlacement(){
@@ -181,7 +195,7 @@ function finishImagePlacement(){
   ctx.save();ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;
   ctx.drawImage(floatingImage,imageBox.x,imageBox.y,imageBox.w,imageBox.h);
   ctx.restore();
-  floatingImage=null;imageBox=null;imageDrag=null;overlay.style.pointerEvents='none';
+  floatingImage=null;imageBox=null;imageDrag=null;cropMode=false;cropBox=null;overlay.style.pointerEvents='none';cropButton.disabled=true;applyCropButton.disabled=true;
   clearPreview();placeButton.disabled=true;cancelButton.disabled=true;savePage();
 }
 importButton.onclick=()=>imageInput.click();
@@ -196,7 +210,9 @@ imageInput.addEventListener('change',e=>{
       const {w,h}=dimensions(),scale=Math.min(w*.65/img.width,h*.65/img.height,1);
       const dw=img.width*scale,dh=img.height*scale;
       floatingImage=img;overlay.style.pointerEvents='auto';imageBox={x:(w-dw)/2,y:(h-dh)/2,w:dw,h:dh};
+      cropMode=false;cropBox=null;
       drawFloatingImage();placeButton.disabled=false;cancelButton.disabled=false;
+      cropButton.disabled=false;applyCropButton.disabled=true;
     };
     img.onerror=()=>alert('This image could not be opened. Try a PNG or JPG file.');
     img.src=reader.result;
@@ -204,22 +220,59 @@ imageInput.addEventListener('change',e=>{
   reader.onerror=()=>alert('Could not read the selected image.');
   reader.readAsDataURL(file);imageInput.value='';
 });
+cropButton.onclick=()=>{
+  if(!floatingImage||!imageBox)return;
+  cropMode=true;
+  const insetX=imageBox.w*.08,insetY=imageBox.h*.08;
+  cropBox={x:imageBox.x+insetX,y:imageBox.y+insetY,w:imageBox.w-2*insetX,h:imageBox.h-2*insetY};
+  applyCropButton.disabled=false;drawFloatingImage();
+};
+applyCropButton.onclick=()=>{
+  if(!floatingImage||!imageBox||!cropBox)return;
+  const sx=(cropBox.x-imageBox.x)/imageBox.w*floatingImage.width;
+  const sy=(cropBox.y-imageBox.y)/imageBox.h*floatingImage.height;
+  const sw=cropBox.w/imageBox.w*floatingImage.width;
+  const sh=cropBox.h/imageBox.h*floatingImage.height;
+  const cropped=document.createElement('canvas');cropped.width=Math.max(1,Math.round(sw));cropped.height=Math.max(1,Math.round(sh));
+  cropped.getContext('2d').drawImage(floatingImage,sx,sy,sw,sh,0,0,cropped.width,cropped.height);
+  const result=new Image();
+  result.onload=()=>{
+    floatingImage=result;
+    imageBox={x:cropBox.x,y:cropBox.y,w:cropBox.w,h:cropBox.h};
+    cropMode=false;cropBox=null;applyCropButton.disabled=true;drawFloatingImage();
+  };
+  result.src=cropped.toDataURL('image/png');
+};
 placeButton.onclick=finishImagePlacement;
-cancelButton.onclick=()=>{floatingImage=null;imageBox=null;imageDrag=null;overlay.style.pointerEvents='none';clearPreview();placeButton.disabled=true;cancelButton.disabled=true};
+cancelButton.onclick=()=>{floatingImage=null;imageBox=null;imageDrag=null;cropMode=false;cropBox=null;overlay.style.pointerEvents='none';cropButton.disabled=true;applyCropButton.disabled=true;clearPreview();placeButton.disabled=true;cancelButton.disabled=true};
 overlay.addEventListener('pointerdown',e=>{
   if(!floatingImage||!imageBox)return;
-  const q=point(e),handle=14;
-  const onHandle=q.x>=imageBox.x+imageBox.w-handle && q.y>=imageBox.y+imageBox.h-handle;
-  const inside=q.x>=imageBox.x&&q.x<=imageBox.x+imageBox.w&&q.y>=imageBox.y&&q.y<=imageBox.y+imageBox.h;
-  if(onHandle){imageDrag={mode:'resize',x:q.x,y:q.y,box:{...imageBox}}}
-  else if(inside){imageDrag={mode:'move',x:q.x,y:q.y,box:{...imageBox}}}
-  else return;
+  const q=point(e),handle=16;
+  if(cropMode && cropBox){
+    const onCropHandle=q.x>=cropBox.x+cropBox.w-handle && q.y>=cropBox.y+cropBox.h-handle;
+    const inCrop=q.x>=cropBox.x&&q.x<=cropBox.x+cropBox.w&&q.y>=cropBox.y&&q.y<=cropBox.y+cropBox.h;
+    if(onCropHandle){imageDrag={mode:'cropResize',x:q.x,y:q.y,box:{...cropBox}}}
+    else if(inCrop){imageDrag={mode:'cropMove',x:q.x,y:q.y,box:{...cropBox}}}
+    else return;
+  } else {
+    const onHandle=q.x>=imageBox.x+imageBox.w-handle && q.y>=imageBox.y+imageBox.h-handle;
+    const inside=q.x>=imageBox.x&&q.x<=imageBox.x+imageBox.w&&q.y>=imageBox.y&&q.y<=imageBox.y+imageBox.h;
+    if(onHandle){imageDrag={mode:'resize',x:q.x,y:q.y,box:{...imageBox}}}
+    else if(inside){imageDrag={mode:'move',x:q.x,y:q.y,box:{...imageBox}}}
+    else return;
+  }
   overlay.setPointerCapture(e.pointerId);e.preventDefault();
 });
 overlay.addEventListener('pointermove',e=>{
   if(!imageDrag||!imageBox)return;
   const q=point(e),dx=q.x-imageDrag.x,dy=q.y-imageDrag.y,b=imageDrag.box;
-  if(imageDrag.mode==='move'){imageBox.x=b.x+dx;imageBox.y=b.y+dy}
+  if(imageDrag.mode==='cropMove'){
+    cropBox.x=Math.max(imageBox.x,Math.min(imageBox.x+imageBox.w-b.w,b.x+dx));
+    cropBox.y=Math.max(imageBox.y,Math.min(imageBox.y+imageBox.h-b.h,b.y+dy));
+  } else if(imageDrag.mode==='cropResize'){
+    cropBox.w=Math.max(40,Math.min(imageBox.x+imageBox.w-b.x,b.w+dx));
+    cropBox.h=Math.max(40,Math.min(imageBox.y+imageBox.h-b.y,b.h+dy));
+  } else if(imageDrag.mode==='move'){imageBox.x=b.x+dx;imageBox.y=b.y+dy}
   else{
     const ratio=b.w/b.h;
     const newW=Math.max(40,b.w+dx);
