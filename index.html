@@ -95,6 +95,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
   <div class="group-title">Edit</div>
   <div class="actions">
     <button id="undo">↶ Undo</button><button id="redo">↷ Redo</button>
+    <button id="importImage">＋ Import image</button><button id="clear">Clear board</button>
   </div>
   <div class="group-title">Pages</div>
   <div class="pages">
@@ -103,10 +104,10 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
     <button id="next" aria-label="Next page">▶</button>
   </div>
   <div class="bottom-actions">
-    <button id="clear">Clear board</button>
     <button id="save">Save PNG ↓</button>
   </div>
 </aside>
+<input id="imageFile" type="file" accept="image/*" hidden>
 <main class="main">
   <div class="topbar"><strong>Whiteboard</strong><span class="hint">Your board automatically fills the available screen space</span></div>
   <div class="board-wrap" id="board">
@@ -152,19 +153,63 @@ document.getElementById('redo').onclick=()=>{if(!future.length)return;history.pu
 document.getElementById('clear').onclick=()=>{snapshot();const{w,h}=dimensions();ctx.clearRect(0,0,w,h);clearPreview();savePage()};
 document.getElementById('prev').onclick=()=>{if(pageIndex>0)loadPage(pageIndex-1)};
 document.getElementById('next').onclick=()=>{savePage();if(pageIndex===pages.length-1)pages.push(null);pageIndex++;restore(pages[pageIndex]);history=[];future=[];updatePage()};
+const importButton=document.getElementById('importImage');
+const imageInput=document.getElementById('imageFile');
+importButton.onclick=()=>imageInput.click();
+imageInput.addEventListener('change',e=>{
+  const file=e.target.files && e.target.files[0];
+  if(!file)return;
+  if(!file.type.startsWith('image/')){alert('Please choose an image file.');imageInput.value='';return;}
+  const reader=new FileReader();
+  reader.onload=()=>{
+    const img=new Image();
+    img.onload=()=>{
+      snapshot();
+      const {w,h}=dimensions();
+      // Fit the whole image inside the board, preserving its aspect ratio.
+      const scale=Math.min(w/img.width,h/img.height);
+      const drawW=img.width*scale, drawH=img.height*scale;
+      const x=(w-drawW)/2, y=(h-drawH)/2;
+      ctx.save();
+      ctx.globalCompositeOperation='source-over';
+      ctx.globalAlpha=1;
+      ctx.drawImage(img,x,y,drawW,drawH);
+      ctx.restore();
+      savePage();
+      setTool('pen');
+    };
+    img.onerror=()=>alert('This image could not be opened. Try a PNG or JPG file.');
+    img.src=reader.result;
+  };
+  reader.onerror=()=>alert('Could not read the selected image.');
+  reader.readAsDataURL(file);
+  imageInput.value='';
+});
 document.getElementById('save').onclick=()=>{
-  // Export an opaque white page: canvas pixels are transparent outside the ink.
-  const exportCanvas=document.createElement('canvas');
-  exportCanvas.width=base.width;
-  exportCanvas.height=base.height;
-  const exportCtx=exportCanvas.getContext('2d');
-  exportCtx.fillStyle='#ffffff';
-  exportCtx.fillRect(0,0,exportCanvas.width,exportCanvas.height);
-  exportCtx.drawImage(base,0,0);
-  const a=document.createElement('a');
-  a.download=`whiteboard-page-${pageIndex+1}.png`;
-  a.href=exportCanvas.toDataURL('image/png');
-  a.click();
+  // Export the visible drawing as a fully opaque white PNG.
+  const out=document.createElement('canvas');
+  out.width=base.width;
+  out.height=base.height;
+  const outCtx=out.getContext('2d', {alpha:false});
+  outCtx.fillStyle='#ffffff';
+  outCtx.fillRect(0,0,out.width,out.height);
+  outCtx.drawImage(base,0,0);
+  // Force any remaining transparent pixels to white.
+  outCtx.globalCompositeOperation='destination-over';
+  outCtx.fillStyle='#ffffff';
+  outCtx.fillRect(0,0,out.width,out.height);
+  outCtx.globalCompositeOperation='source-over';
+  out.toBlob(blob=>{
+    if(!blob){alert('Could not create PNG. Please try again.');return;}
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    a.download=`classroom-whiteboard-page-${pageIndex+1}-white.png`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),2000);
+  },'image/png');
 };
 let resizeTimer;window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{savePage();initCanvas(base,ctx);initCanvas(overlay,pctx);restore(pages[pageIndex])},150)});
 initCanvas(base,ctx);initCanvas(overlay,pctx);updatePage();
