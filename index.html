@@ -86,7 +86,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
  .sidebar{grid-row:1;grid-column:1;padding:8px 10px;gap:7px;overflow:visible}
  .brand{font-size:15px;padding:0 2px 5px;border:0}
  .group-title{display:none}
- .tools{grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
+ .tools{grid-template-columns:repeat(8,minmax(0,1fr));gap:5px}
  .tool{font-size:10px;text-align:center;padding:7px 2px;min-height:35px}
  .settings{display:flex;align-items:center;justify-content:space-between;gap:12px}
  .setting{font-size:11px}
@@ -112,6 +112,8 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
  .setting{gap:4px}
 }
 #board{cursor:crosshair}
+#board.pan-mode{cursor:grab}
+#board.pan-mode:active{cursor:grabbing}
 #board:active{user-select:none}
 </style>
 </head>
@@ -127,6 +129,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
     <button class="tool" data-tool="rect" aria-label="Rectangle" title="Rectangle"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="1"/></svg></button>
     <button class="tool" data-tool="ellipse" aria-label="Oval" title="Oval"><svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="12" rx="8" ry="6"/></svg></button>
     <button class="tool" data-tool="text" aria-label="Text" title="Text"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6V4h16v2M12 4v16M8 20h8"/></svg></button>
+    <button class="tool" data-tool="pan" aria-label="Pan canvas" title="Pan canvas — left-click and drag"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 12V5a2 2 0 0 1 4 0v6-8a2 2 0 0 1 4 0v8-6a2 2 0 0 1 4 0v9c0 5-3 8-8 8h-1c-2 0-3-1-4-2l-4-5a2 2 0 0 1 3-3l2 2"/></svg></button>
   </div>
   <div class="group-title">Appearance</div>
   <div class="settings">
@@ -151,7 +154,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
     </div>
   </div>
   <div class="topbar-right">
-    <span class="hint">Infinite canvas · Space + drag to pan · Wheel to zoom</span>
+    <span class="hint">Infinite canvas · Select hand tool, then drag · Wheel to zoom</span>
     <div class="top-edit" aria-label="Undo and redo">
       <button id="undo" title="Undo" aria-label="Undo">↶</button>
       <button id="redo" title="Redo" aria-label="Redo">↷</button>
@@ -170,7 +173,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
   <div class="board-wrap" id="board">
     <canvas id="draw"></canvas><canvas id="preview"></canvas>
   </div>
-  <div class="status">Infinite canvas: draw anywhere. Touch: pinch and pan. Desktop: Space + drag to pan; mouse wheel to zoom. Shift-click PNG to export the full board.</div>
+  <div class="status">Infinite canvas: draw anywhere. Touch: pinch and pan. Desktop: select the hand tool and left-drag to pan; mouse wheel to zoom. Shift-click PNG to export the full board.</div>
 </main>
 
 <script>
@@ -182,7 +185,7 @@ let tool='pen', width=4, drawing=false, start=null, last=null;
 let boardZoom=1, cameraX=0, cameraY=0;
 let tiles=new Map(), pages=[null], pageIndex=0, history=[], future=[];
 const activePointers=new Map();
-let gesture=null,mousePan=null,spaceDown=false;
+let gesture=null,mousePan=null;
 let floatingImage=null,imageBox=null,imageDrag=null,cropMode=false,cropBox=null;
 const shapeTools=new Set(['line','rect','ellipse']);
 const colourInput=document.getElementById('colour');
@@ -285,7 +288,11 @@ function paintShape(a,b){
   drawShape(c,a,b);c.restore();
  });
 }
-function setTool(t){tool=t;document.querySelectorAll('[data-tool]').forEach(b=>b.classList.toggle('active',b.dataset.tool===t))}
+function setTool(t){
+ tool=t;
+ document.querySelectorAll('[data-tool]').forEach(b=>b.classList.toggle('active',b.dataset.tool===t));
+ board.classList.toggle('pan-mode',t==='pan');
+}
 document.querySelectorAll('[data-tool]').forEach(b=>b.addEventListener('click',()=>setTool(b.dataset.tool)));
 document.getElementById('size').addEventListener('input',e=>{width=+e.target.value;document.getElementById('sizeVal').textContent=width});
 function serializeTiles(){
@@ -332,17 +339,14 @@ window.addEventListener('wheel',e=>{
  if(!board.contains(e.target))return;
  e.preventDefault();zoomAt(boardZoom*(e.deltaY<0?1.12:1/1.12),e.clientX,e.clientY);
 },{passive:false});
-window.addEventListener('keydown',e=>{
- const el=document.activeElement,typing=el&&(['INPUT','TEXTAREA','SELECT','BUTTON'].includes(el.tagName)||el.isContentEditable);
- if(e.code==='Space'&&!e.repeat&&!typing){spaceDown=true;e.preventDefault()}
-});
-window.addEventListener('keyup',e=>{if(e.code==='Space')spaceDown=false});
-window.addEventListener('blur',()=>{spaceDown=false;mousePan=null});
+window.addEventListener('blur',()=>{mousePan=null});
 function midpoint(map){const a=[...map.values()];return{x:(a[0].x+a[1].x)/2,y:(a[0].y+a[1].y)/2}}
 function distance(map){const a=[...map.values()];return Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)}
 base.addEventListener('pointerdown',e=>{
- if(e.pointerType==='mouse'&&(spaceDown||e.button===1)){
-  if(floatingImage)return;mousePan={x:e.clientX,y:e.clientY,cx:cameraX,cy:cameraY};base.setPointerCapture(e.pointerId);e.preventDefault();return;
+ if(e.pointerType==='mouse'&&tool==='pan'&&e.button===0){
+  if(floatingImage)return;
+  mousePan={x:e.clientX,y:e.clientY,cx:cameraX,cy:cameraY};
+  base.setPointerCapture(e.pointerId);e.preventDefault();return;
  }
  if(e.pointerType==='touch'){
   activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
