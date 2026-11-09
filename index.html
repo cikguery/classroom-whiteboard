@@ -152,7 +152,20 @@ document.getElementById('redo').onclick=()=>{if(!future.length)return;history.pu
 document.getElementById('clear').onclick=()=>{snapshot();const{w,h}=dimensions();ctx.clearRect(0,0,w,h);clearPreview();savePage()};
 document.getElementById('prev').onclick=()=>{if(pageIndex>0)loadPage(pageIndex-1)};
 document.getElementById('next').onclick=()=>{savePage();if(pageIndex===pages.length-1)pages.push(null);pageIndex++;restore(pages[pageIndex]);history=[];future=[];updatePage()};
-document.getElementById('save').onclick=()=>{const a=document.createElement('a');a.download=`whiteboard-page-${pageIndex+1}.png`;a.href=base.toDataURL('image/png');a.click()};
+document.getElementById('save').onclick=()=>{
+  // Export an opaque white page: canvas pixels are transparent outside the ink.
+  const exportCanvas=document.createElement('canvas');
+  exportCanvas.width=base.width;
+  exportCanvas.height=base.height;
+  const exportCtx=exportCanvas.getContext('2d');
+  exportCtx.fillStyle='#ffffff';
+  exportCtx.fillRect(0,0,exportCanvas.width,exportCanvas.height);
+  exportCtx.drawImage(base,0,0);
+  const a=document.createElement('a');
+  a.download=`whiteboard-page-${pageIndex+1}.png`;
+  a.href=exportCanvas.toDataURL('image/png');
+  a.click();
+};
 let resizeTimer;window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{savePage();initCanvas(base,ctx);initCanvas(overlay,pctx);restore(pages[pageIndex])},150)});
 initCanvas(base,ctx);initCanvas(overlay,pctx);updatePage();
 })();
