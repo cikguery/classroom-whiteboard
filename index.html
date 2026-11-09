@@ -2,122 +2,159 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#172033">
 <title>Classroom Whiteboard</title>
 <style>
-:root{font-family:Arial,Helvetica,sans-serif;color:#18212f;background:#eef1f5}
+:root{font-family:Arial,Helvetica,sans-serif;color:#172033;background:#edf1f6}
 *{box-sizing:border-box}
-body{margin:0;min-height:100vh;display:flex;flex-direction:column}
-header{background:#18212f;color:#fff;padding:12px 16px;font-size:18px;font-weight:700}
-.toolbar{display:flex;flex-wrap:wrap;gap:7px;align-items:center;padding:10px;background:#fff;border-bottom:1px solid #d6dce5}
-button,select,input{font:inherit}
-button{border:1px solid #c8d0dc;background:#fff;border-radius:7px;padding:8px 11px;cursor:pointer}
-button.active{background:#dceafe;border-color:#3975d7;color:#174b9c}
-button:hover{background:#edf3fc}
-label{display:flex;align-items:center;gap:6px;font-size:13px}
-input[type=color]{width:35px;height:32px;padding:2px;border:1px solid #c8d0dc;border-radius:6px}
-input[type=range]{width:95px}
-.workspace{padding:14px;flex:1;display:flex;min-height:0}
-.board-wrap{position:relative;flex:1;min-height:65vh;background:white;border:1px solid #cbd3df;border-radius:10px;overflow:hidden;box-shadow:0 2px 10px #15223812}
+html,body{margin:0;width:100%;height:100%;overflow:hidden}
+body{height:100vh;height:100dvh;display:grid;grid-template-columns:190px minmax(0,1fr);grid-template-rows:1fr}
+button,input{font:inherit}
+.sidebar{min-width:0;background:#172033;color:#fff;display:flex;flex-direction:column;padding:14px 11px;gap:12px;overflow-y:auto;z-index:5}
+.brand{font-weight:700;font-size:18px;line-height:1.2;padding:5px 5px 12px;border-bottom:1px solid #39445a}
+.group-title{font-size:10px;letter-spacing:1.1px;text-transform:uppercase;color:#aab5c8;font-weight:700;margin:2px 4px 0}
+.tools{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+button{border:1px solid #cbd3df;background:#fff;color:#172033;border-radius:7px;padding:9px 8px;cursor:pointer;font-size:13px;min-height:38px}
+button:hover{background:#eaf1fb}
+.tool{background:#27344b;border-color:#43516a;color:#fff;text-align:left}
+.tool.active{background:#dceafe;border-color:#9fc2ff;color:#174b9c;font-weight:700}
+.settings{display:grid;gap:10px}
+.setting{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;color:#e8edf5}
+input[type=color]{width:42px;height:34px;padding:2px;border:1px solid #62708a;border-radius:6px;background:#fff}
+input[type=range]{width:100px;accent-color:#8db8ff}
+.size-row{display:flex;align-items:center;gap:8px}
+.size-row span{min-width:16px;text-align:right;font-size:12px;color:#cbd5e1}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.actions button{font-size:12px}
+.pages{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:5px;color:#e8edf5;font-size:12px;text-align:center}
+.pages button{padding:7px 4px}
+.bottom-actions{margin-top:auto;display:grid;gap:8px;padding-top:10px;border-top:1px solid #39445a}
+#save{background:#2670d8;color:white;border-color:#2670d8;font-weight:700;min-height:44px;font-size:14px}
+#save:hover{background:#1d5fb9}
+#clear{color:#9b2634;border-color:#e7b9bf}
+.main{min-width:0;min-height:0;display:flex;flex-direction:column;padding:12px;gap:8px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:34px}
+.topbar strong{font-size:14px}
+.hint{font-size:11px;color:#647084;text-align:right}
+.board-wrap{position:relative;flex:1;min-width:0;min-height:0;background:#fff;border:1px solid #cbd3df;border-radius:10px;overflow:hidden;box-shadow:0 2px 12px #15223812}
 canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 #draw{z-index:1;touch-action:none}
 #preview{z-index:2;pointer-events:none}
-.footer{padding:8px 14px;color:#5b6574;font-size:12px}
-@media(max-width:600px){.workspace{padding:7px}.board-wrap{min-height:68vh}.toolbar{gap:5px}button{padding:7px 9px}}
+.status{font-size:11px;color:#647084;min-height:14px}
+@media(max-width:720px){
+ body{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}
+ .sidebar{grid-row:1;grid-column:1;padding:8px 10px;gap:7px;overflow:visible}
+ .brand{font-size:15px;padding:0 2px 5px;border:0}
+ .group-title{display:none}
+ .tools{grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
+ .tool{font-size:10px;text-align:center;padding:7px 2px;min-height:35px}
+ .settings{display:flex;align-items:center;justify-content:space-between;gap:12px}
+ .setting{font-size:11px}
+ input[type=range]{width:min(25vw,100px)}
+ .actions{display:flex;gap:5px;flex-wrap:wrap}
+ .actions button{min-height:32px;padding:6px 8px;font-size:11px}
+ .pages{display:flex;gap:6px}
+ .pages button{min-height:30px}
+ .bottom-actions{display:flex;align-items:center;gap:7px;margin:0;padding:7px 0 0;border-top:1px solid #39445a}
+ #save{margin-left:auto;min-height:38px;padding:7px 18px}
+ #clear{min-height:34px}
+ .main{grid-row:2;grid-column:1;padding:7px;gap:5px}
+ .topbar{min-height:23px}
+ .topbar strong{font-size:12px}
+ .hint{font-size:10px}
+ .status{display:none}
+}
+@media(max-width:390px){
+ .tool{font-size:9px}
+ .tools{gap:3px}
+ .sidebar{padding:7px}
+ .actions button{font-size:10px;padding:5px 6px}
+ .setting{gap:4px}
+}
 </style>
 </head>
 <body>
-<header>Classroom Whiteboard</header>
-<div class="toolbar" id="toolbar">
-<button data-tool="pen" class="active">Pen</button>
-<button data-tool="highlighter">Highlighter</button>
-<button data-tool="eraser">Eraser</button>
-<button data-tool="line">Line</button>
-<button data-tool="rect">Rectangle</button>
-<button data-tool="ellipse">Oval</button>
-<button data-tool="text">Text</button>
-<label>Colour <input id="colour" type="color" value="#172033"></label>
-<label>Size <input id="size" type="range" min="1" max="30" value="4"><span id="sizeVal">4</span></label>
-<button id="undo">Undo</button><button id="redo">Redo</button><button id="clear">Clear</button>
-<button id="prev">◀ Page</button><span id="pageLabel">1 / 1</span><button id="next">Page ▶</button>
-<button id="save">Save PNG</button>
-</div>
-<div class="workspace"><div class="board-wrap" id="board">
-<canvas id="draw"></canvas><canvas id="preview"></canvas>
-</div></div>
-<div class="footer">Select a tool, then draw on the whiteboard. Shapes are previewed on a separate layer and committed when you release the pointer.</div>
+<aside class="sidebar">
+  <div class="brand">Classroom Whiteboard</div>
+  <div class="group-title">Drawing tools</div>
+  <div class="tools">
+    <button class="tool active" data-tool="pen">Pen</button>
+    <button class="tool" data-tool="highlighter">Highlight</button>
+    <button class="tool" data-tool="eraser">Eraser</button>
+    <button class="tool" data-tool="line">Line</button>
+    <button class="tool" data-tool="rect">Rectangle</button>
+    <button class="tool" data-tool="ellipse">Oval</button>
+    <button class="tool" data-tool="text">Text</button>
+  </div>
+  <div class="group-title">Appearance</div>
+  <div class="settings">
+    <label class="setting">Colour <input id="colour" type="color" value="#172033"></label>
+    <label class="setting">Pen size <span class="size-row"><input id="size" type="range" min="1" max="30" value="4"><span id="sizeVal">4</span></span></label>
+  </div>
+  <div class="group-title">Edit</div>
+  <div class="actions">
+    <button id="undo">↶ Undo</button><button id="redo">↷ Redo</button>
+  </div>
+  <div class="group-title">Pages</div>
+  <div class="pages">
+    <button id="prev" aria-label="Previous page">◀</button>
+    <span id="pageLabel">1 / 1</span>
+    <button id="next" aria-label="Next page">▶</button>
+  </div>
+  <div class="bottom-actions">
+    <button id="clear">Clear board</button>
+    <button id="save">Save PNG ↓</button>
+  </div>
+</aside>
+<main class="main">
+  <div class="topbar"><strong>Whiteboard</strong><span class="hint">Your board automatically fills the available screen space</span></div>
+  <div class="board-wrap" id="board">
+    <canvas id="draw"></canvas><canvas id="preview"></canvas>
+  </div>
+  <div class="status">Tip: choose a shape, drag on the board, then release to place it.</div>
+</main>
 <script>
 (() => {
 const base=document.getElementById('draw'), overlay=document.getElementById('preview');
-const ctx=base.getContext('2d'), pctx=overlay.getContext('2d');
-const board=document.getElementById('board');
+const ctx=base.getContext('2d'), pctx=overlay.getContext('2d'), board=document.getElementById('board');
 let tool='pen', color='#172033', width=4, drawing=false, start=null, last=null;
 let pages=[null], pageIndex=0, history=[], future=[];
 const shapeTools=new Set(['line','rect','ellipse']);
 function dimensions(){const r=board.getBoundingClientRect();return {w:r.width,h:r.height,dpr:Math.max(1,window.devicePixelRatio||1)}}
-function setupCanvas(c,context,preserve=true){
-  const old=preserve?c.toDataURL():null, {w,h,dpr}=dimensions();
-  c.width=Math.round(w*dpr);c.height=Math.round(h*dpr);
-  context.setTransform(dpr,0,0,dpr,0,0);
-  context.lineCap='round';context.lineJoin='round';
-  if(old){const im=new Image();im.onload=()=>{context.clearRect(0,0,w,h);context.drawImage(im,0,0,w,h)};im.src=old}
-}
+function initCanvas(c,context){const {w,h,dpr}=dimensions();c.width=Math.max(1,Math.round(w*dpr));c.height=Math.max(1,Math.round(h*dpr));context.setTransform(dpr,0,0,dpr,0,0);context.lineCap='round';context.lineJoin='round'}
 function clearPreview(){const {w,h}=dimensions();pctx.clearRect(0,0,w,h)}
 function snapshot(){history.push(base.toDataURL());if(history.length>60)history.shift();future=[]}
-function restore(data){
-  const {w,h}=dimensions();ctx.clearRect(0,0,w,h);
-  if(!data)return;
-  const im=new Image();im.onload=()=>{ctx.clearRect(0,0,w,h);ctx.drawImage(im,0,0,w,h)};im.src=data;
-}
+function restore(data){const {w,h}=dimensions();ctx.clearRect(0,0,w,h);if(!data)return;const im=new Image();im.onload=()=>{ctx.clearRect(0,0,w,h);ctx.drawImage(im,0,0,w,h)};im.src=data}
 function savePage(){pages[pageIndex]=base.toDataURL()}
+function updatePage(){document.getElementById('pageLabel').textContent=`${pageIndex+1} / ${pages.length}`}
 function loadPage(i){savePage();pageIndex=i;restore(pages[i]);history=[];future=[];updatePage()}
-function updatePage(){document.getElementById('pageLabel').textContent=(pageIndex+1)+' / '+pages.length}
-function point(e){const r=base.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top}}
-function style(context,preview=false){
-  context.lineWidth=width;context.strokeStyle=color;context.fillStyle=color;
-  context.globalAlpha=tool==='highlighter'?.28:1;
-  context.globalCompositeOperation=tool==='eraser'?'destination-out':'source-over';
-}
-function drawShape(context,a,b){
-  context.beginPath();
-  if(tool==='line'){context.moveTo(a.x,a.y);context.lineTo(b.x,b.y);context.stroke()}
-  else if(tool==='rect'){context.strokeRect(a.x,a.y,b.x-a.x,b.y-a.y)}
-  else if(tool==='ellipse'){const rx=Math.abs(b.x-a.x)/2,ry=Math.abs(b.y-a.y)/2;context.ellipse((a.x+b.x)/2,(a.y+b.y)/2,Math.max(rx,.5),Math.max(ry,.5),0,0,Math.PI*2);context.stroke()}
-}
+function point(e){const r=base.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
+function drawShape(c,a,b){c.beginPath();if(tool==='line'){c.moveTo(a.x,a.y);c.lineTo(b.x,b.y);c.stroke()}else if(tool==='rect'){c.strokeRect(a.x,a.y,b.x-a.x,b.y-a.y)}else{const rx=Math.abs(b.x-a.x)/2,ry=Math.abs(b.y-a.y)/2;c.ellipse((a.x+b.x)/2,(a.y+b.y)/2,Math.max(rx,.5),Math.max(ry,.5),0,0,Math.PI*2);c.stroke()}}
 function setTool(t){tool=t;document.querySelectorAll('[data-tool]').forEach(b=>b.classList.toggle('active',b.dataset.tool===t))}
 document.querySelectorAll('[data-tool]').forEach(b=>b.addEventListener('click',()=>setTool(b.dataset.tool)));
 document.getElementById('colour').addEventListener('input',e=>color=e.target.value);
 document.getElementById('size').addEventListener('input',e=>{width=+e.target.value;document.getElementById('sizeVal').textContent=width});
 base.addEventListener('pointerdown',e=>{
-  if(tool==='text'){const p=point(e),value=prompt('Enter text:');if(value){snapshot();ctx.save();ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;ctx.fillStyle=color;ctx.font=`${Math.max(14,width*5)}px Arial`;ctx.fillText(value,p.x,p.y);ctx.restore()}return}
-  snapshot();drawing=true;start=point(e);last=start;base.setPointerCapture(e.pointerId);
-  if(shapeTools.has(tool)){clearPreview();pctx.save();pctx.globalCompositeOperation='source-over';pctx.globalAlpha=1;pctx.strokeStyle=color;pctx.lineWidth=width;pctx.lineCap='round';pctx.lineJoin='round';pctx.restore()}
-  else {ctx.save();style(ctx);ctx.beginPath();ctx.moveTo(start.x,start.y);ctx.lineTo(start.x+.01,start.y+.01);ctx.stroke();ctx.restore()}
+ if(tool==='text'){const q=point(e),v=prompt('Enter text:');if(v){snapshot();ctx.save();ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;ctx.fillStyle=color;ctx.font=`${Math.max(14,width*5)}px Arial`;ctx.fillText(v,q.x,q.y);ctx.restore();savePage()}return}
+ snapshot();drawing=true;start=point(e);last=start;base.setPointerCapture(e.pointerId);
+ if(shapeTools.has(tool)){clearPreview()}else{ctx.save();ctx.globalCompositeOperation=tool==='eraser'?'destination-out':'source-over';ctx.globalAlpha=tool==='highlighter'?.28:1;ctx.strokeStyle=color;ctx.lineWidth=width;ctx.beginPath();ctx.moveTo(start.x,start.y);ctx.lineTo(start.x+.1,start.y+.1);ctx.stroke();ctx.restore()}
 });
 base.addEventListener('pointermove',e=>{
-  if(!drawing)return;const p=point(e);
-  if(shapeTools.has(tool)){
-    clearPreview();pctx.save();pctx.globalCompositeOperation='source-over';pctx.globalAlpha=1;pctx.strokeStyle=color;pctx.lineWidth=width;pctx.lineCap='round';pctx.lineJoin='round';drawShape(pctx,start,p);pctx.restore();
-  }else{
-    ctx.save();style(ctx);ctx.beginPath();ctx.moveTo(last.x,last.y);ctx.lineTo(p.x,p.y);ctx.stroke();ctx.restore();last=p;
-  }
+ if(!drawing)return;const q=point(e);
+ if(shapeTools.has(tool)){clearPreview();pctx.save();pctx.globalCompositeOperation='source-over';pctx.globalAlpha=1;pctx.strokeStyle=color;pctx.lineWidth=width;pctx.lineCap='round';pctx.lineJoin='round';drawShape(pctx,start,q);pctx.restore()}
+ else{ctx.save();ctx.globalCompositeOperation=tool==='eraser'?'destination-out':'source-over';ctx.globalAlpha=tool==='highlighter'?.28:1;ctx.strokeStyle=color;ctx.lineWidth=width;ctx.beginPath();ctx.moveTo(last.x,last.y);ctx.lineTo(q.x,q.y);ctx.stroke();ctx.restore();last=q}
 });
-function finish(e){
-  if(!drawing)return;const p=point(e);
-  if(shapeTools.has(tool)){
-    ctx.save();ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap='round';ctx.lineJoin='round';drawShape(ctx,start,p);ctx.restore();clearPreview();
-  }
-  drawing=false;start=null;last=null;savePage();
-}
+function finish(e){if(!drawing)return;const q=point(e);if(shapeTools.has(tool)){ctx.save();ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap='round';ctx.lineJoin='round';drawShape(ctx,start,q);ctx.restore();clearPreview()}drawing=false;start=last=null;savePage()}
 base.addEventListener('pointerup',finish);base.addEventListener('pointercancel',finish);
 document.getElementById('undo').onclick=()=>{if(!history.length)return;future.push(base.toDataURL());restore(history.pop());savePage()};
 document.getElementById('redo').onclick=()=>{if(!future.length)return;history.push(base.toDataURL());restore(future.pop());savePage()};
-document.getElementById('clear').onclick=()=>{snapshot();const {w,h}=dimensions();ctx.clearRect(0,0,w,h);clearPreview();savePage()};
+document.getElementById('clear').onclick=()=>{snapshot();const{w,h}=dimensions();ctx.clearRect(0,0,w,h);clearPreview();savePage()};
 document.getElementById('prev').onclick=()=>{if(pageIndex>0)loadPage(pageIndex-1)};
 document.getElementById('next').onclick=()=>{savePage();if(pageIndex===pages.length-1)pages.push(null);pageIndex++;restore(pages[pageIndex]);history=[];future=[];updatePage()};
 document.getElementById('save').onclick=()=>{const a=document.createElement('a');a.download=`whiteboard-page-${pageIndex+1}.png`;a.href=base.toDataURL('image/png');a.click()};
-let resizeTimer;window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{savePage();setupCanvas(base,ctx,false);setupCanvas(overlay,pctx,false);restore(pages[pageIndex])},120)});
-setupCanvas(base,ctx,false);setupCanvas(overlay,pctx,false);updatePage();
+let resizeTimer;window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{savePage();initCanvas(base,ctx);initCanvas(overlay,pctx);restore(pages[pageIndex])},150)});
+initCanvas(base,ctx);initCanvas(overlay,pctx);updatePage();
 })();
 </script>
 </body>
