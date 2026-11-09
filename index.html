@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Classroom Teaching Whiteboard</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin:0; padding:16px; font-family:Arial,sans-serif; background:#eef1f4; color:#202832; }
+  .app { max-width:1100px; margin:auto; }
+  header { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
+  h1 { font-size:22px; margin:0 0 5px; }
+  .muted { color:#66717d; font-size:13px; }
+  .panel { background:#fff; border:1px solid #d7dde3; border-radius:12px; padding:13px; margin-bottom:12px; }
+  .label { font-size:11px; font-weight:bold; color:#66717d; letter-spacing:.05em; margin-bottom:8px; }
+  .toolbar { display:flex; gap:7px; flex-wrap:wrap; align-items:center; }
+  button { border:1px solid #cbd2d9; border-radius:8px; padding:9px 12px; background:#fff; color:#202832; cursor:pointer; font-size:13px; }
+  button:hover { background:#f0f4f7; }
+  button.active { background:#e5efff; border-color:#3978c6; font-weight:bold; }
+  button:disabled { opacity:.4; cursor:not--allowed; }
+  .swatch { width:28px; height:28px; padding:0; border-radius:50%; border:2px solid #aaa; }
+  .swatch.active { outline:3px solid #3978c6; outline-offset:2px; }
+  .controls { display:flex; gap:24px; flex-wrap:wrap; align-items:center; margin-top:14px; }
+  .board-shell { background:#fff; border:2px solid #aeb7bd; border-radius:10px; overflow:hidden; }
+  .board-head { display:flex; justify-content:space-between; padding:10px 13px; background:#f1f4f5; color:#263238; font-size:12px; font-weight:bold; }
+  canvas { display:block; width:100%; height:min(62vh,620px); min-height:320px; background:#fff; touch-action:none; cursor:crosshair; }
+  .actions { margin-top:12px; }
+  .primary { background:#2469b5; color:white; border-color:#2469b5; }
+  .primary:hover { background:#1c5797; }
+  #status { margin-top:10px; min-height:18px; }
+  @media(max-width:600px) { body{padding:9px} canvas{height:55vh;min-height:300px} button{padding:8px 9px} h1{font-size:19px} }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div>
+      <h1>My Classroom Whiteboard</h1>
+      <div class="muted">Touch-friendly teaching board · Use your finger or stylus</div>
+    </div>
+    <div class="panel" style="padding:8px 12px;margin:0"><strong id="pagecount">Page 1 of 1</strong></div>
+  </header>
+
+  <section class="panel">
+    <div class="label">DRAWING TOOLS</div>
+    <div class="toolbar" id="tools">
+      <button class="active" data-tool="pen">✎ Pen</button>
+      <button data-tool="highlighter">▰ Highlighter</button>
+      <button data-tool="eraser">⌫ Eraser</button>
+      <button data-tool="line">╱ Line</button>
+      <button data-tool="rect">▭ Rectangle</button>
+      <button data-tool="circle">◯ Oval</button>
+      <button data-tool="text">T Text</button>
+    </div>
+    <div class="controls">
+      <div>
+        <div class="label">COLOUR</div>
+        <div class="toolbar" id="colors">
+          <button class="swatch active" data-color="#17212b" style="background:#17212b" aria-label="Black"></button>
+          <button class="swatch" data-color="#e53935" style="background:#e53935" aria-label="Red"></button>
+          <button class="swatch" data-color="#1565c0" style="background:#1565c0" aria-label="Blue"></button>
+          <button class="swatch" data-color="#16834a" style="background:#16834a" aria-label="Green"></button>
+          <button class="swatch" data-color="#8e44ad" style="background:#8e44ad" aria-label="Purple"></button>
+          <button class="swatch" data-color="#e6a000" style="background:#e6a000" aria-label="Orange"></button>
+          <input id="customcolor" type="color" value="#17212b" aria-label="Custom colour" style="width:32px;height:32px;border:0;background:transparent">
+        </div>
+      </div>
+      <div style="min-width:180px;flex:1">
+        <div class="toolbar" style="justify-content:space-between">
+          <span class="label">PEN SIZE</span><span id="sizeval" class="muted">4 px</span>
+        </div>
+        <input id="pensize" type="range" min="1" max="30" value="4" style="width:100%;accent-color:#2469b5">
+      </div>
+    </div>
+  </section>
+
+  <div class="board-shell">
+    <div class="board-head"><span>WHITEBOARD</span><span>CLASSROOM TEACHING MODE</span></div>
+    <canvas id="board" aria-label="Whiteboard drawing area"></canvas>
+  </div>
+
+  <div class="toolbar actions">
+    <button id="undo">↶ Undo</button>
+    <button id="redo">↷ Redo</button>
+    <button id="clear">Clear board</button>
+    <button id="newpage">＋ New page</button>
+    <button id="prevpage">← Previous</button>
+    <button id="nextpage">Next →</button>
+    <button id="save" class="primary">↓ Save as PNG</button>
+  </div>
+  <div id="status" class="muted">Select a tool and start writing. Choose Text, then tap the board to type.</div>
+</div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('board');
+  const ctx = canvas.getContext('2d');
+  const $ = id => document.getElementById(id);
+  let tool = 'pen', color = '#17212b', size = 4;
+  let drawing = false, start = null, last = null, preview = null;
+  let history = [], future = [], pages = [null], page = 0;
+
+  function setupCanvas(preserve = true) {
+    const old = preserve && canvas.width ? canvas.toDataURL() : null;
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.round(rect.width * dpr);
+    canvas.height = Math.round(rect.height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, rect.width, rect.height);
+    if (old) drawImageData(old);
+  }
+  function drawImageData(url) {
+    const img = new Image();
+    img.onload = () => {
+      const r = canvas.getBoundingClientRect();
+      ctx.save(); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+      ctx.drawImage(img, 0, 0, r.width, r.height); ctx.restore();
+    };
+    img.src = url;
+  }
+  function snapshot() {
+    history.push(canvas.toDataURL());
+    if (history.length > 40) history.shift();
+    future = [];
+  }
+  function restore(url) {
+    const r = canvas.getBoundingClientRect();
+    ctx.save(); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+    ctx.clearRect(0, 0, r.width, r.height);
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, r.width, r.height);
+    ctx.restore();
+    if (url) drawImageData(url);
+  }
+  function point(e) {
+    const r = canvas.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  }
+  function applyStyle() {
+    ctx.lineWidth = size;
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.globalAlpha = tool === 'highlighter' ? 0.28 : 1;
+    ctx.globalCompositeOperation = tool === 'eraser' ? 'destination-out' : 'source-over';
+  }
+  function drawShape(a, b) {
+    ctx.beginPath();
+    if (tool === 'line') {
+      ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+    } else if (tool === 'rect') {
+      ctx.rect(a.x, a.y, b.x - a.x, b.y - a.y);
+    } else if (tool === 'circle') {
+      const dx = b.x - a.x, dy = b.y - a.y;
+      ctx.ellipse(a.x + dx / 2, a.y + dy / 2, Math.abs(dx / 2), Math.abs(dy / 2), 0, 0, Math.PI * 2);
+    }
+    ctx.stroke();
+  }
+  function setTool(next) {
+    tool = next;
+    document.querySelectorAll('[data-tool]').forEach(b => b.classList.toggle('active', b.dataset.tool === tool));
+    const hints = {
+      pen:'Write freely using your finger or stylus.',
+      highlighter:'Drag over writing to highlight it.',
+      eraser:'Drag over the writing you want to erase.',
+      line:'Drag to draw a straight line.',
+      rect:'Drag to draw a rectangle.',
+      circle:'Drag to draw an oval.',
+      text:'Tap the board to type text.'
+    };
+    $('status').textContent = hints[tool];
+    canvas.style.cursor = tool === 'text' ? 'text' : 'crosshair';
+  }
+  document.querySelectorAll('[data-tool]').forEach(b => b.addEventListener('click', () => setTool(b.dataset.tool)));
+  function chooseColor(c) {
+    color = c;
+    document.querySelectorAll('.swatch').forEach(b => b.classList.toggle('active', b.dataset.color === c));
+    $('customcolor').value = c;
+  }
+  document.querySelectorAll('.swatch').forEach(b => b.addEventListener('click', () => chooseColor(b.dataset.color)));
+  $('customcolor').addEventListener('input', e => chooseColor(e.target.value));
+  $('pensize').addEventListener('input', e => {
+    size = Number(e.target.value); $('sizeval').textContent = size + ' px';
+  });
+
+  canvas.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    canvas.setPointerCapture(e.pointerId);
+    const p = point(e);
+    if (tool === 'text') {
+      const value = window.prompt('Enter your text:');
+      if (value) {
+        snapshot();
+        ctx.save(); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+        ctx.fillStyle = color; ctx.font = `${Math.max(16, size * 5)}px Arial`;
+        value.split('\n').forEach((line, i) => ctx.fillText(line, p.x, p.y + i * Math.max(20, size * 6)));
+        ctx.restore();
+      }
+      return;
+    }
+    snapshot(); drawing = true; start = p; last = p;
+    preview = canvas.toDataURL();
+    if (['pen','highlighter','eraser'].includes(tool)) {
+      applyStyle(); ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(p.x + .1,p.y + .1); ctx.stroke();
+      ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+    }
+  });
+  canvas.addEventListener('pointermove', e => {
+    if (!drawing) return;
+    e.preventDefault();
+    const p = point(e);
+    if (['pen','highlighter','eraser'].includes(tool)) {
+      applyStyle(); ctx.beginPath(); ctx.moveTo(last.x,last.y); ctx.lineTo(p.x,p.y); ctx.stroke();
+      ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; last = p;
+    } else {
+      restore(preview); applyStyle(); drawShape(start,p);
+      ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+    }
+  });
+  function finish() { if (drawing) { drawing = false; preview = null; } }
+  canvas.addEventListener('pointerup', finish);
+  canvas.addEventListener('pointercancel', finish);
+
+  $('undo').onclick = () => {
+    if (!history.length) return;
+    future.push(canvas.toDataURL()); restore(history.pop());
+  };
+  $('redo').onclick = () => {
+    if (!future.length) return;
+    history.push(canvas.toDataURL()); restore(future.pop());
+  };
+  $('clear').onclick = () => {
+    if (!confirm('Clear this page?')) return;
+    snapshot(); const r = canvas.getBoundingClientRect();
+    ctx.clearRect(0,0,r.width,r.height); ctx.fillStyle='#fff'; ctx.fillRect(0,0,r.width,r.height);
+  };
+  function updatePageLabel() {
+    $('pagecount').textContent = `Page ${page + 1} of ${pages.length}`;
+    $('prevpage').disabled = page === 0;
+    $('nextpage').disabled = page === pages.length - 1;
+  }
+  function storePage() { pages[page] = canvas.toDataURL(); }
+  function loadPage(n) {
+    storePage(); page = n; history = []; future = [];
+    restore(pages[page]); updatePageLabel();
+  }
+  $('newpage').onclick = () => { storePage(); pages.push(null); loadPage(pages.length - 1); };
+  $('prevpage').onclick = () => { if (page > 0) loadPage(page - 1); };
+  $('nextpage').onclick = () => { if (page < pages.length - 1) loadPage(page + 1); };
+  $('save').onclick = () => {
+    const link = document.createElement('a');
+    link.download = `classroom-whiteboard-page-${page + 1}.png`;
+    link.href = canvas.toDataURL('image/png'); link.click();
+  };
+
+  setupCanvas(false);
+  updatePageLabel();
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => { storePage(); setupCanvas(false); restore(pages[page]); }, 150);
+  });
+})();
+</script>
+</body>
+</html>
