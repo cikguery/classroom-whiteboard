@@ -143,12 +143,12 @@ base.addEventListener('pointerdown',e=>{
  if(floatingImage)return;
  if(tool==='text'){const q=point(e),v=prompt('Enter text:');if(v){snapshot();ctx.save();ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;ctx.fillStyle=selectedColour();ctx.font=`${Math.max(14,width*5)}px Arial`;ctx.fillText(v,q.x,q.y);ctx.restore();savePage()}return}
  snapshot();drawing=true;start=point(e);last=start;base.setPointerCapture(e.pointerId);
- if(shapeTools.has(tool)){clearPreview()}else{ctx.save();ctx.globalCompositeOperation=tool==='eraser'?'destination-out':'source-over';ctx.globalAlpha=tool==='highlighter'?.18:1;ctx.strokeStyle=selectedColour();ctx.lineWidth=width;ctx.beginPath();ctx.moveTo(start.x,start.y);ctx.lineTo(start.x+.1,start.y+.1);ctx.stroke();ctx.restore()}
+ if(shapeTools.has(tool)){clearPreview()}else{ctx.save();ctx.globalCompositeOperation=tool==='eraser'?'destination-out':'source-over';ctx.globalAlpha=tool==='highlighter'?.07:1;ctx.strokeStyle=selectedColour();ctx.lineWidth=width;ctx.beginPath();ctx.moveTo(start.x,start.y);ctx.lineTo(start.x+.1,start.y+.1);ctx.stroke();ctx.restore()}
 });
 base.addEventListener('pointermove',e=>{
  if(!drawing||floatingImage)return;const q=point(e);
  if(shapeTools.has(tool)){clearPreview();pctx.save();pctx.globalCompositeOperation='source-over';pctx.globalAlpha=1;pctx.strokeStyle=selectedColour();pctx.lineWidth=width;pctx.lineCap='round';pctx.lineJoin='round';drawShape(pctx,start,q);pctx.restore()}
- else{ctx.save();ctx.globalCompositeOperation=tool==='eraser'?'destination-out':'source-over';ctx.globalAlpha=tool==='highlighter'?.18:1;ctx.strokeStyle=selectedColour();ctx.lineWidth=width;ctx.beginPath();ctx.moveTo(last.x,last.y);ctx.lineTo(q.x,q.y);ctx.stroke();ctx.restore();last=q}
+ else{ctx.save();ctx.globalCompositeOperation=tool==='eraser'?'destination-out':'source-over';ctx.globalAlpha=tool==='highlighter'?.07:1;ctx.strokeStyle=selectedColour();ctx.lineWidth=width;ctx.beginPath();ctx.moveTo(last.x,last.y);ctx.lineTo(q.x,q.y);ctx.stroke();ctx.restore();last=q}
 });
 function finish(e){if(!drawing)return;const q=point(e);if(shapeTools.has(tool)){ctx.save();ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;ctx.strokeStyle=selectedColour();ctx.lineWidth=width;ctx.lineCap='round';ctx.lineJoin='round';drawShape(ctx,start,q);ctx.restore();clearPreview()}drawing=false;start=last=null;savePage()}
 base.addEventListener('pointerup',finish);base.addEventListener('pointercancel',finish);
