@@ -19,6 +19,13 @@ button{border:1px solid #cbd3df;background:#fff;color:#172033;border-radius:7px;
 button:hover{background:#eaf1fb}
 .tool{background:#27344b;border-color:#43516a;color:#fff;text-align:left}
 .tool.active{background:#dceafe;border-color:#9fc2ff;color:#174b9c;font-weight:700}
+
+.tool{display:flex;align-items:center;justify-content:center;text-align:center;padding:7px;min-height:44px}
+.tool svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#save{display:flex;align-items:center;justify-content:center;gap:8px}
+#save svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#save span{font-size:13px}
+
 .settings{display:grid;gap:10px}
 .setting{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;color:#e8edf5}
 input[type=color]{width:42px;height:34px;padding:2px;border:1px solid #62708a;border-radius:6px;background:#fff}
@@ -79,13 +86,13 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
   <div class="brand">Classroom Whiteboard</div>
   <div class="group-title">Drawing tools</div>
   <div class="tools">
-    <button class="tool active" data-tool="pen">Pen</button>
-    <button class="tool" data-tool="highlighter">Highlight</button>
-    <button class="tool" data-tool="eraser">Eraser</button>
-    <button class="tool" data-tool="line">Line</button>
-    <button class="tool" data-tool="rect">Rectangle</button>
-    <button class="tool" data-tool="ellipse">Oval</button>
-    <button class="tool" data-tool="text">Text</button>
+    <button class="tool active" data-tool="pen" aria-label="Pen" title="Pen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 20 4.5-1 10.8-10.8a2.1 2.1 0 0 0-3-3L5.5 16 4 20Z"/><path d="m14.8 6.2 3 3"/></svg></button>
+    <button class="tool" data-tool="highlighter" aria-label="Highlight" title="Highlight"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 15 9-9 6 6-9 9H4v-6Z"/><path d="m11 8 6 6M4 20h16"/></svg></button>
+    <button class="tool" data-tool="eraser" aria-label="Eraser" title="Eraser"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 9 10 3a2 2 0 0 1 2.8 0l4.2 4.2a2 2 0 0 1 0 2.8L10 19H6l-3-3a2 2 0 0 1 0-2.8L7 9Z"/><path d="m8 8 8 8M10 19h10"/></svg></button>
+    <button class="tool" data-tool="line" aria-label="Line" title="Line"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5"/></svg></button>
+    <button class="tool" data-tool="rect" aria-label="Rectangle" title="Rectangle"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="1"/></svg></button>
+    <button class="tool" data-tool="ellipse" aria-label="Oval" title="Oval"><svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="12" rx="8" ry="6"/></svg></button>
+    <button class="tool" data-tool="text" aria-label="Text" title="Text"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6V4h16v2M12 4v16M8 20h8"/></svg></button>
   </div>
   <div class="group-title">Appearance</div>
   <div class="settings">
@@ -104,7 +111,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
     <button id="next" aria-label="Next page">▶</button>
   </div>
   <div class="bottom-actions">
-    <button id="save">Save PNG ↓</button>
+    <button id="save" aria-label="Save as PNG" title="Save as PNG"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h12l4 4v14H3V3h2Z"/><path d="M7 3v6h10V3M7 21v-8h10v8"/></svg><span>PNG</span></button>
   </div>
 </aside>
 <input id="imageFile" type="file" accept="image/*" hidden>
