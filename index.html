@@ -48,6 +48,20 @@ input[type=range]{width:100px;accent-color:#8db8ff}
 .top-pages button{min-height:32px;padding:5px 12px}
 .topbar-right{margin-left:auto}
 #save{display:flex;align-items:center;justify-content:center;gap:8px;min-height:38px;padding:7px 16px}
+
+.top-edit,.zoom-controls{display:flex;align-items:center;gap:5px}
+.top-edit button,.zoom-controls button{min-height:34px;min-width:34px;padding:5px 9px}
+.zoom-controls{font-size:12px;color:#334155}
+#zoomLabel{min-width:38px;text-align:center;font-variant-numeric:tabular-nums}
+#zoomReset{font-size:11px;min-width:42px}
+#draw,#preview{transform-origin:50% 50%;transition:transform .12s ease}
+@media(max-width:640px){
+ .topbar-right{gap:5px}
+ .top-edit,.zoom-controls{gap:3px}
+ .top-edit button,.zoom-controls button{min-width:29px;min-height:32px;padding:4px 6px}
+ #zoomReset{display:none}
+}
+
 #save svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 #save span{font-size:13px}
 @media(max-width:640px){
@@ -118,7 +132,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
   </div>
   <div class="group-title">Edit</div>
   <div class="actions">
-    <button id="undo">↶ Undo</button><button id="redo">↷ Redo</button>
+    
     <button id="importImage">＋ Import image</button><button id="cropImage" disabled>Crop image</button><button id="applyCrop" disabled>Apply crop</button><button id="placeImage" disabled>Place image</button><button id="cancelImage" disabled>Cancel image</button><button id="clear">Clear board</button>
   </div>
 </aside>
@@ -135,6 +149,16 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
   </div>
   <div class="topbar-right">
     <span class="hint">Your board automatically fills the available screen space</span>
+    <div class="top-edit" aria-label="Undo and redo">
+      <button id="undo" title="Undo" aria-label="Undo">↶</button>
+      <button id="redo" title="Redo" aria-label="Redo">↷</button>
+    </div>
+    <div class="zoom-controls" aria-label="Board zoom">
+      <button id="zoomOut" title="Zoom out" aria-label="Zoom out">−</button>
+      <span id="zoomLabel">100%</span>
+      <button id="zoomIn" title="Zoom in" aria-label="Zoom in">+</button>
+      <button id="zoomReset" title="Reset zoom" aria-label="Reset zoom">100%</button>
+    </div>
     <button id="save" aria-label="Save as PNG" title="Save as PNG">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h12l4 4v14H3V3h2Z"/><path d="M7 3v6h10V3M7 21v-8h10v8"/></svg><span>PNG</span>
     </button>
@@ -151,6 +175,7 @@ const base=document.getElementById('draw'), overlay=document.getElementById('pre
 const ctx=base.getContext('2d'), pctx=overlay.getContext('2d'), board=document.getElementById('board');
 let tool='pen', color='#172033', width=4, drawing=false, start=null, last=null;
 let pages=[null], pageIndex=0, history=[], future=[];
+let boardZoom=1;
 const shapeTools=new Set(['line','rect','ellipse']);
 function dimensions(){const r=board.getBoundingClientRect();return {w:r.width,h:r.height,dpr:Math.max(1,window.devicePixelRatio||1)}}
 function initCanvas(c,context){const {w,h,dpr}=dimensions();c.width=Math.max(1,Math.round(w*dpr));c.height=Math.max(1,Math.round(h*dpr));context.setTransform(dpr,0,0,dpr,0,0);context.lineCap='round';context.lineJoin='round'}
@@ -160,7 +185,19 @@ function restore(data){const {w,h}=dimensions();ctx.clearRect(0,0,w,h);if(!data)
 function savePage(){pages[pageIndex]=base.toDataURL()}
 function updatePage(){document.getElementById('pageLabel').textContent=`${pageIndex+1} / ${pages.length}`}
 function loadPage(i){savePage();pageIndex=i;restore(pages[i]);history=[];future=[];updatePage()}
-function point(e){const r=base.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
+function point(e){
+  const r=board.getBoundingClientRect(),{w,h}=dimensions();
+  return {x:(e.clientX-r.left-w/2)/boardZoom+w/2,y:(e.clientY-r.top-h/2)/boardZoom+h/2};
+}
+function updateZoom(){
+  document.getElementById('zoomLabel').textContent=`${Math.round(boardZoom*100)}%`;
+  [base,overlay].forEach(c=>c.style.transform=`scale(${boardZoom})`);
+  document.getElementById('zoomOut').disabled=boardZoom<=.5;
+  document.getElementById('zoomIn').disabled=boardZoom>=2;
+}
+document.getElementById('zoomOut').onclick=()=>{boardZoom=Math.max(.5,+(boardZoom-.1).toFixed(2));updateZoom()};
+document.getElementById('zoomIn').onclick=()=>{boardZoom=Math.min(2,+(boardZoom+.1).toFixed(2));updateZoom()};
+document.getElementById('zoomReset').onclick=()=>{boardZoom=1;updateZoom()};
 function drawShape(c,a,b){c.beginPath();if(tool==='line'){c.moveTo(a.x,a.y);c.lineTo(b.x,b.y);c.stroke()}else if(tool==='rect'){c.strokeRect(a.x,a.y,b.x-a.x,b.y-a.y)}else{const rx=Math.abs(b.x-a.x)/2,ry=Math.abs(b.y-a.y)/2;c.ellipse((a.x+b.x)/2,(a.y+b.y)/2,Math.max(rx,.5),Math.max(ry,.5),0,0,Math.PI*2);c.stroke()}}
 function setTool(t){tool=t;document.querySelectorAll('[data-tool]').forEach(b=>b.classList.toggle('active',b.dataset.tool===t))}
 document.querySelectorAll('[data-tool]').forEach(b=>b.addEventListener('click',()=>setTool(b.dataset.tool)));
@@ -342,7 +379,7 @@ document.getElementById('save').onclick=()=>{
   },'image/png');
 };
 let resizeTimer;window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{savePage();initCanvas(base,ctx);initCanvas(overlay,pctx);restore(pages[pageIndex])},150)});
-initCanvas(base,ctx);initCanvas(overlay,pctx);updatePage();
+initCanvas(base,ctx);initCanvas(overlay,pctx);updatePage();updateZoom();
 })();
 </script>
 </body>
