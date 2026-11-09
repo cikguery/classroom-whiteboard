@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#172033">
-<title>My Creative Board</title>
+<title>Classroom Whiteboard</title>
 <style>
 :root{font-family:Arial,Helvetica,sans-serif;color:#172033;background:#edf1f6}
 *{box-sizing:border-box}
@@ -83,33 +83,49 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .status{font-size:11px;color:#647084;min-height:14px}
 @media(max-width:720px){
  body{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}
- .sidebar{grid-row:1;grid-column:1;padding:8px 10px;gap:7px;overflow:visible}
- .brand{font-size:15px;padding:0 2px 5px;border:0}
+ .sidebar{grid-row:1;grid-column:1;padding:9px 12px 10px;gap:8px;overflow:visible}
+ .brand{font-size:16px;line-height:1.2;padding:0 2px 3px;border:0}
  .group-title{display:none}
- .tools{grid-template-columns:repeat(8,minmax(0,1fr));gap:5px}
- .tool{font-size:10px;text-align:center;padding:7px 2px;min-height:35px}
- .settings{display:flex;align-items:center;justify-content:space-between;gap:12px}
- .setting{font-size:11px}
- input[type=range]{width:min(25vw,100px)}
- .actions{display:flex;gap:5px;flex-wrap:wrap}
- .actions button{min-height:32px;padding:6px 8px;font-size:11px}
- .pages{display:flex;gap:6px}
- .pages button{min-height:30px}
- .bottom-actions{display:flex;align-items:center;gap:7px;margin:0;padding:7px 0 0;border-top:1px solid #39445a}
- #save{margin-left:auto;min-height:38px;padding:7px 18px}
- #clear{min-height:34px}
- .main{grid-row:2;grid-column:1;padding:7px;gap:5px}
- .topbar{min-height:23px}
- .topbar strong{font-size:12px}
- .hint{font-size:10px}
+ .tools{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+ .tool{min-height:40px;padding:7px 4px}
+ .tool svg{width:22px;height:22px}
+ .settings{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);align-items:center;gap:12px}
+ .setting{font-size:12px;min-width:0}
+ input[type=color]{width:38px;height:32px}
+ input[type=range]{width:min(22vw,120px)}
+ .size-row{gap:5px;min-width:0}
+ .actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+ .actions button{min-height:36px;padding:6px 5px;font-size:12px;line-height:1.15}
+ .main{grid-row:2;grid-column:1;padding:7px;gap:6px;min-height:0}
+ .topbar{display:grid;grid-template-columns:minmax(0,1fr);gap:7px;min-height:0}
+ .topbar-left{display:flex;justify-content:space-between;width:100%;gap:8px}
+ .topbar strong{font-size:14px;white-space:nowrap}
+ .top-pages{gap:7px;white-space:nowrap;font-size:13px}
+ .top-pages button{min-height:34px;min-width:38px;padding:5px 8px}
+ .topbar-right{display:flex;align-items:center;justify-content:space-between;width:100%;margin-left:0;gap:8px}
+ .hint{display:none}
+ .top-edit,.zoom-controls{gap:5px}
+ .top-edit button,.zoom-controls button{min-width:34px;min-height:34px;padding:5px 8px}
+ #zoomReset{display:none}
+ #zoomLabel{min-width:42px}
+ #save{min-height:38px;padding:6px 13px;flex:0 0 auto}
+ .board-wrap{border-radius:10px}
  .status{display:none}
 }
-@media(max-width:390px){
- .tool{font-size:9px}
- .tools{gap:3px}
- .sidebar{padding:7px}
- .actions button{font-size:10px;padding:5px 6px}
- .setting{gap:4px}
+@media(max-width:420px){
+ .sidebar{padding:8px 9px;gap:7px}
+ .tools{gap:5px}
+ .tool{min-height:38px}
+ .settings{grid-template-columns:minmax(0,0.85fr) minmax(0,1.15fr);gap:7px}
+ .setting{font-size:11px;gap:4px}
+ input[type=range]{width:min(20vw,86px)}
+ .actions{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+ .actions button{min-height:34px;font-size:11px}
+ .topbar-right{gap:5px}
+ .top-edit,.zoom-controls{gap:3px}
+ .top-edit button,.zoom-controls button{min-width:31px;min-height:32px;padding:4px 6px}
+ #zoomLabel{min-width:36px;font-size:11px}
+ #save{min-height:36px;padding:5px 10px}
 }
 #board{cursor:crosshair}
 #board.pan-mode{cursor:grab}
@@ -119,7 +135,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 </head>
 <body>
 <aside class="sidebar">
-  <div class="brand">Creative Whiteboard</div>
+  <div class="brand">Classroom Whiteboard</div>
   <div class="group-title">Drawing tools</div>
   <div class="tools">
     <button class="tool active" data-tool="pen" aria-label="Pen" title="Pen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 20 4.5-1 10.8-10.8a2.1 2.1 0 0 0-3-3L5.5 16 4 20Z"/><path d="m14.8 6.2 3 3"/></svg></button>
